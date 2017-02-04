@@ -20,6 +20,7 @@ public class StreamConsumer extends Thread {
         this.logger = logger;
     }
 
+    @Override
     public void run() {
         try {
             InputStreamReader isr = new InputStreamReader(is);
@@ -28,16 +29,20 @@ public class StreamConsumer extends Thread {
             while ((line = br.readLine()) != null)
                 log(type + ">" + line);
         } catch (IOException e) {
-            log("Error whilst consuming stream");
-            e.printStackTrace();
+            log("Error whilst consuming stream", e);
         }
+    }
+
+    private void log(final String log, final Exception e) {
+        log(log);
+        log(e.getMessage());
     }
 
     private void log(final String log) {
         if (logger.isPresent()) {
             logger.get().log(log);
         } else {
-            System.out.println(log);
+            System.out.println(log);    // NOSONAR
         }
     }
 }

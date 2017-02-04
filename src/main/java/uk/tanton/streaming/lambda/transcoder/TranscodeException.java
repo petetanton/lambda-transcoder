@@ -1,8 +1,6 @@
 package uk.tanton.streaming.lambda.transcoder;
 
 public class TranscodeException extends RuntimeException {
-    public TranscodeException() {
-    }
 
     public TranscodeException(Throwable cause) {
         super(cause);

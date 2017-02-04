@@ -118,7 +118,7 @@ public class Main implements RequestHandler<SNSEvent, String> {
         if (logger.isPresent()) {
             logger.get().log("Running: " + cmd);
         } else {
-            System.out.println("Running: " + cmd);
+            System.out.println("Running: " + cmd);  // NOSONAR
         }
         final Process start = Runtime.getRuntime().exec(cmd);
         final StreamConsumer error = new StreamConsumer(start.getErrorStream(), "ERROR", logger);
@@ -129,7 +129,7 @@ public class Main implements RequestHandler<SNSEvent, String> {
         while (start.isAlive() || error.isAlive() || info.isAlive()) {
             try {
                 Thread.sleep(500);
-            } catch (InterruptedException ignored) {
+            } catch (InterruptedException ignored) {    // NOSONAR
             }
         }
     }
