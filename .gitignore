@@ -3,6 +3,6 @@ deploy
 target
 sources
 *.zip
-*.txt
+new-last-modified.txt
 *.iml
 src/main/resources/ffmpeg
