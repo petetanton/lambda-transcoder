@@ -74,7 +74,7 @@ public class Main implements RequestHandler<SNSEvent, String> {
     }
 
     private String transcode(final String key, final Profile profile, final String streamId, final LambdaLogger logger) throws IOException, InterruptedException {
-        final String outputFileName = String.format("/tmp/%s-%s.ts", streamId, profile.getProfileName());
+        final String outputFileName = String.format("/tmp/%s-%s-%s.ts", streamId, profile.getProfileName(), key.substring(key.lastIndexOf('/') + 1));
         final StringBuilder sb = new StringBuilder();
 //         ffmpeg -i 1000ktest-5-100000.ts -vcodec libx264 -x264opts keyint=25:min-keyint=25:scenecut=-1 -b:v 500k -acodec copy test.ts
 
@@ -135,7 +135,8 @@ public class Main implements RequestHandler<SNSEvent, String> {
     }
 
     private void uploadToS3(final TranscodeMessage transcodeMessage, final String filename) {
-        final PutObjectRequest putObjectRequest = new PutObjectRequest("live-streaming-shared-livestreamingdistribution-199wt2f91f0ik", "hls/" + transcodeMessage.getStreamId() + "/" + transcodeMessage.getProfile().getProfileName() + ".ts", new File(filename));
+        final String key = String.format("hls/%s/%s.ts", transcodeMessage.getStreamId(), filename.substring(filename.lastIndexOf('/') + 1));
+        final PutObjectRequest putObjectRequest = new PutObjectRequest("live-streaming-shared-livestreamingdistribution-199wt2f91f0ik", key, new File(filename));
         this.amazonS3Client.putObject(putObjectRequest);
     }
 }
