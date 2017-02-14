@@ -74,7 +74,7 @@ public class Main implements RequestHandler<SNSEvent, String> {
     }
 
     private String transcode(final String key, final Profile profile, final String streamId, final LambdaLogger logger) throws IOException, InterruptedException {
-        final String outputFileName = String.format("/tmp/%s-%s-%s.ts", streamId, profile.getProfileName(), key.substring(key.lastIndexOf('/') + 1));
+        final String outputFileName = String.format("/tmp/%s-%s-%s", streamId, profile.getProfileName(), key.substring(key.lastIndexOf('/') + 1));
         final StringBuilder sb = new StringBuilder();
 //         ffmpeg -i 1000ktest-5-100000.ts -vcodec libx264 -x264opts keyint=25:min-keyint=25:scenecut=-1 -b:v 500k -acodec copy test.ts
 
