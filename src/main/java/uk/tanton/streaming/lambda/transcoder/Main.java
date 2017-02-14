@@ -135,7 +135,7 @@ public class Main implements RequestHandler<SNSEvent, String> {
     }
 
     private void uploadToS3(final TranscodeMessage transcodeMessage, final String filename) {
-        final String key = String.format("hls/%s/%s.ts", transcodeMessage.getStreamId(), filename.substring(filename.lastIndexOf('/') + 1));
+        final String key = String.format("hls/%s/%s", transcodeMessage.getStreamId(), filename.substring(filename.lastIndexOf('/') + 1));
         final PutObjectRequest putObjectRequest = new PutObjectRequest("live-streaming-shared-livestreamingdistribution-199wt2f91f0ik", key, new File(filename));
         this.amazonS3Client.putObject(putObjectRequest);
     }
