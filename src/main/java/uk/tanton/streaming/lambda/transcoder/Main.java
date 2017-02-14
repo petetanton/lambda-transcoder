@@ -74,37 +74,11 @@ public class Main implements RequestHandler<SNSEvent, String> {
     }
 
     private String transcode(final String key, final Profile profile, final String streamId, final LambdaLogger logger) throws IOException, InterruptedException {
+        final Transcoder transcoder = new Transcoder("/tmp/ffmpeg", logger);
+
         final String outputFileName = String.format("/tmp/%s-%s-%s", streamId, profile.getProfileName(), key.substring(key.lastIndexOf('/') + 1));
-        final StringBuilder sb = new StringBuilder();
-//         ffmpeg -i 1000ktest-5-100000.ts -vcodec libx264 -x264opts keyint=25:min-keyint=25:scenecut=-1 -b:v 500k -acodec copy test.ts
 
-        final String ffmpeg = "/tmp/ffmpeg";
-        logger.log("ffmpeg is at: " + ffmpeg);
-        sb.append(ffmpeg).append(" -i ").append("/tmp/").append(key.substring(key.lastIndexOf('/') + 1))
-                .append(" -vcodec ").append(profile.getVideoCodec())
-                .append(" -x264opts ").append(profile.getX264Opts())
-                .append(" -b:v ").append(profile.getVideoBitrate());
-        if (profile.getHeight() > 0 && profile.getWidth() > 0) {
-            sb.append(" -vf scale=320:240");
-        }
-        sb.append(" -acodec copy")
-                .append(" -threads 0 -preset superfast")
-                .append(" ").append(outputFileName);
-
-        logger.log("about to run " + sb.toString());
-
-        final Process start = Runtime.getRuntime().exec(sb.toString());
-        final StreamConsumer error = new StreamConsumer(start.getErrorStream(), "ERROR", Optional.of(logger));
-        final StreamConsumer info = new StreamConsumer(start.getInputStream(), "INFO", Optional.of(logger));
-        error.start();
-        info.start();
-
-        while (start.isAlive()) {
-            Thread.sleep(100);
-        }
-
-        logger.log("Finished transcode");
-        return outputFileName;
+        return transcoder.transcode(profile, "/tmp/" + key.substring(key.lastIndexOf('/') + 1), outputFileName);
     }
 
     private void prepareFfmpeg() throws IOException {
