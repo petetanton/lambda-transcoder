@@ -65,4 +65,46 @@ public class Profile {
     public void setWidth(int width) {
         this.width = width;
     }
+
+    @Override
+    public String toString() {
+        return "Profile{" +
+                "audioCodec='" + audioCodec + '\'' +
+                ", profileName='" + profileName + '\'' +
+                ", videoCodec='" + videoCodec + '\'' +
+                ", x264Opts='" + x264Opts + '\'' +
+                ", videoBitrate=" + videoBitrate +
+                ", height=" + height +
+                ", width=" + width +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Profile profile = (Profile) o;
+
+        if (videoBitrate != profile.videoBitrate) return false;
+        if (height != profile.height) return false;
+        if (width != profile.width) return false;
+        if (!profileName.equals(profile.profileName)) return false;
+        if (!videoCodec.equals(profile.videoCodec)) return false;
+        if (!x264Opts.equals(profile.x264Opts)) return false;
+        return audioCodec.equals(profile.audioCodec);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = profileName.hashCode();
+        result = 31 * result + videoCodec.hashCode();
+        result = 31 * result + x264Opts.hashCode();
+        result = 31 * result + audioCodec.hashCode();
+        result = 31 * result + videoBitrate;
+        result = 31 * result + height;
+        result = 31 * result + width;
+        return result;
+    }
 }

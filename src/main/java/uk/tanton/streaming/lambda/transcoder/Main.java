@@ -5,25 +5,29 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.google.gson.Gson;
 import uk.tanton.streaming.lambda.transcoder.domain.Profile;
 import uk.tanton.streaming.lambda.transcoder.domain.TranscodeMessage;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Optional;
 
 public class Main implements RequestHandler<SNSEvent, String> {
 
     private final Gson gson;
     private final AmazonS3Client amazonS3Client;
+    private final S3FileManager s3FileManager;
 
     public Main() throws IOException {
+        this.gson = new Gson();
+        this.amazonS3Client = new AmazonS3Client();
+        this.s3FileManager = new S3FileManager(this.amazonS3Client);
+        prepareFfmpeg();
+    }
+
+//    Testing Constructor
+    public Main(S3FileManager s3FileManager) throws IOException {
+        this.s3FileManager = s3FileManager;
         this.gson = new Gson();
         this.amazonS3Client = new AmazonS3Client();
         prepareFfmpeg();
@@ -34,20 +38,19 @@ public class Main implements RequestHandler<SNSEvent, String> {
         for (SNSEvent.SNSRecord record : snsEvent.getRecords()) {
             final TranscodeMessage transcodeMessage = gson.fromJson(record.getSNS().getMessage(), TranscodeMessage.class);
             context.getLogger().log(transcodeMessage.toString());
-            final S3Object object = this.amazonS3Client.getObject(transcodeMessage.getBucket(), transcodeMessage.getKey());
 
             try {
-                convertStreamToFile(object, context.getLogger());
+                this.s3FileManager.downloadObject(transcodeMessage.getBucket(), transcodeMessage.getKey(), context.getLogger());
             } catch (Exception e) {
-                throw new TranscodeException(e);
+                throw new TranscodeException("error when downloading object from S3", e);
             }
 
 
-            context.getLogger().log(object.getKey());
+            context.getLogger().log(transcodeMessage.getKey());
             try {
                 final String outputFile = transcode(transcodeMessage.getKey(), transcodeMessage.getProfile(), transcodeMessage.getStreamId(), context.getLogger());
                 context.getLogger().log(String.format("output file: %s", outputFile));
-                uploadToS3(transcodeMessage, outputFile);
+                this.s3FileManager.uploadToS3(transcodeMessage, outputFile);
             } catch (IOException | InterruptedException e) {
                 context.getLogger().log(e.getMessage());
                 throw new TranscodeException(e);
@@ -56,22 +59,22 @@ public class Main implements RequestHandler<SNSEvent, String> {
         return "finished";
     }
 
-    private void convertStreamToFile(final S3Object object, final LambdaLogger logger) throws IOException, InterruptedException {
-        logger.log("Writing s3 object to file");
-        InputStream in = object.getObjectContent();
-        byte[] buf = new byte[1024];
-        OutputStream out = new FileOutputStream("/tmp/" + object.getKey().substring(object.getKey().lastIndexOf('/') + 1));
-        int count;
-        while ((count = in.read(buf)) != -1) {
-            if (Thread.interrupted()) {
-                out.close();
-                throw new InterruptedException();
-            }
-            out.write(buf, 0, count);
-        }
-        out.close();
-        in.close();
-    }
+//    private void convertStreamToFile(final S3Object object, final LambdaLogger logger) throws IOException, InterruptedException {
+//        logger.log("Writing s3 object to file");
+//        InputStream in = object.getObjectContent();
+//        byte[] buf = new byte[1024];
+//        OutputStream out = new FileOutputStream("/tmp/" + object.getKey().substring(object.getKey().lastIndexOf('/') + 1));
+//        int count;
+//        while ((count = in.read(buf)) != -1) {
+//            if (Thread.interrupted()) {
+//                out.close();
+//                throw new InterruptedException();
+//            }
+//            out.write(buf, 0, count);
+//        }
+//        out.close();
+//        in.close();
+//    }
 
     private String transcode(final String key, final Profile profile, final String streamId, final LambdaLogger logger) throws IOException, InterruptedException {
         final Transcoder transcoder = new Transcoder("/tmp/ffmpeg", logger);
@@ -108,9 +111,11 @@ public class Main implements RequestHandler<SNSEvent, String> {
         }
     }
 
-    private void uploadToS3(final TranscodeMessage transcodeMessage, final String filename) {
-        final String key = String.format("hls/%s/%s", transcodeMessage.getStreamId(), filename.substring(filename.lastIndexOf('/') + 1));
-        final PutObjectRequest putObjectRequest = new PutObjectRequest("live-streaming-shared-livestreamingdistribution-199wt2f91f0ik", key, new File(filename));
-        this.amazonS3Client.putObject(putObjectRequest);
-    }
+
+
+//    private void uploadToS3(final TranscodeMessage transcodeMessage, final String filename) {
+//        final String key = String.format("hls/%s/%s", transcodeMessage.getStreamId(), filename.substring(filename.lastIndexOf('/') + 1));
+//        final PutObjectRequest putObjectRequest = new PutObjectRequest("live-streaming-shared-livestreamingdistribution-199wt2f91f0ik", key, new File(filename));
+//        this.amazonS3Client.putObject(putObjectRequest);
+//    }
 }

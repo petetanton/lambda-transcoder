@@ -1,0 +1,14 @@
+{
+  "streamId": "streamId",
+  "profile": {
+    "profileName": "profileName",
+    "videoCodec": "x264",
+    "x264Opts": "x264",
+    "audioCodec": "aac",
+    "videoBirate": 1000,
+    "height": 1080,
+    "width": 1920
+  },
+  "bucket": "bucket",
+  "key": "key"
+}
