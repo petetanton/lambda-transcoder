@@ -1,7 +1,6 @@
 package uk.tanton.streaming.lambda.transcoder;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,8 +12,11 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TranscoderTest {
@@ -37,7 +39,7 @@ public class TranscoderTest {
 
     @Test
     public void itShouldTranscodeVideo() {
-        underTest = new Transcoder(FFMPEG);
+        underTest = new Transcoder(FFMPEG, logger);
 
         final Profile profile = new Profile();
         profile.setVideoCodec("libx264");
@@ -49,14 +51,28 @@ public class TranscoderTest {
         try {
             final String actual = underTest.transcode(profile, "src/test/resources/input.ts", "src/test/resources/output.ts");
             assertEquals("src/test/resources/output.ts", actual);
-            assertTrue(fileEquality(new File("src/test/resources/expected-output-1m.ts"), new File("src/test/resources/output.ts")));
         } catch (InterruptedException | IOException e) {
             fail("Got an exception");
             e.printStackTrace();
         }
-    }
 
-    private boolean fileEquality(final File expected, final File actual) throws IOException {
-        return FileUtils.contentEquals(expected, actual);
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(FFMPEG).append(" -i ").append("src/test/resources/input.ts")
+                .append(" -vcodec ").append(profile.getVideoCodec())
+                .append(" -x264opts ").append(profile.getX264Opts())
+                .append(" -b:v ").append(profile.getVideoBitrate());
+        if (profile.getHeight() > 0 && profile.getWidth() > 0) {
+            sb.append(" -vf scale=").append(profile.getWidth()).append(":").append(profile.getHeight());
+        }
+        sb.append(" -acodec copy")
+                .append(" -threads 0 -preset superfast")
+                .append(" ").append("src/test/resources/output.ts");
+
+
+        verify(logger).log("about to run " + sb.toString());
+        verify(logger).log("ffmpeg is at: " + FFMPEG);
+        verify(logger, times(64)).log(anyString());
+        verifyNoMoreInteractions(logger);
     }
 }
